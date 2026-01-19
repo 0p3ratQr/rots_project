@@ -3,15 +3,12 @@ using UnityEngine;
 
 public class DestructiblePlants : MonoBehaviour
 {
-
     public event EventHandler OnDestructibleTakeDamage;
-    private void OnTriggerEnter2D(Collider2D collision)
+    
+    public void TakeDamage()
     {
-        if (collision.gameObject.GetComponent<Sword>())
-        {
-            OnDestructibleTakeDamage?.Invoke(this, EventArgs.Empty);
-            Destroy(gameObject);
-            NavMeshSurfaceManagement.Instance.RebakeNavMeshSurface();
-        }
+        OnDestructibleTakeDamage?.Invoke(this, EventArgs.Empty);
+        Destroy(gameObject);
+        NavMeshSurfaceManagement.Instance.RebakeNavMeshSurface();
     }
 }

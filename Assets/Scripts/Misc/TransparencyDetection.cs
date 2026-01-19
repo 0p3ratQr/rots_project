@@ -52,7 +52,6 @@ public class TransparencyDetection : MonoBehaviour
 
     private IEnumerator FadeRoutine(SpriteRenderer spriteRenderer, float fadeTime, float startTransparency, float targetTransparency)
     {
-        Debug.Log($"[TransparencyDetection] FadeRoutine started: duration={fadeTime}s, from alpha={startTransparency:F3} to alpha={targetTransparency:F3}");
         float elapsedTime = 0f; //время от начала прозрачности
         
         while (elapsedTime < fadeTime)
@@ -60,12 +59,7 @@ public class TransparencyDetection : MonoBehaviour
             elapsedTime += Time.deltaTime;
             float newAlpha = Mathf.Lerp(startTransparency, targetTransparency,  elapsedTime / fadeTime);
             spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, newAlpha);
-            Debug.Log($"[TransparencyDetection] Fading... progress: {(elapsedTime / fadeTime) * 100:F1}%, current alpha: {newAlpha:F3}");
             yield return null; // каждый кадр выполняется хуйня
         }
-        
-        // Ensure final alpha is set exactly
-        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, targetTransparency);
-        Debug.Log($"[TransparencyDetection] FadeRoutine completed. Final alpha: {targetTransparency:F3}");
     }
 }

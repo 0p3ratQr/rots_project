@@ -13,6 +13,8 @@ public class PlayerVisual : MonoBehaviour
     private static readonly int Die = Animator.StringToHash("IsDie");
     private static readonly int Running = Animator.StringToHash("IsRunning");
 
+    private static readonly int Attack = Animator.StringToHash("IsAttack");
+
 
     private void Awake()
     {
@@ -21,9 +23,18 @@ public class PlayerVisual : MonoBehaviour
         _flashBlick = GetComponent<FlashBlick>();
     }
 
-private void Start()
+    private void Start()
     {
+        Debug.Log("PlayerVisual.Start() called");
+        Player.Instance.OnPlayerAttack += Player_OnPlayerAttack;
         Player.Instance.OnPlayerDeath += Player_OnPlayerDeath;
+        Debug.Log("PlayerVisual subscribed to attack and death events");
+    }
+    
+    private void Player_OnPlayerAttack(object sender, System.EventArgs e)
+    {
+        Debug.Log("PlayerVisual.Player_OnPlayerAttack() called");
+        animator.SetBool(Attack, true);
     }
     private void Player_OnPlayerDeath(object sender, System.EventArgs e)
     {
@@ -42,11 +53,45 @@ private void Start()
         Vector3 mousePos = GameInput.Instance.GetMousePosition();
         Vector3 playerScreenPosition = Player.Instance.GetPlayerPosition();
 
-        spriteRenderer.flipX = mousePos.x < playerScreenPosition.x;
+        bool isFacingLeft = mousePos.x < playerScreenPosition.x;
+        spriteRenderer.flipX = isFacingLeft;
+        
+        // Отражаем коллайдер атаки в соответствии с направлением
+        Player.Instance.FlipAttackCollider(isFacingLeft);
     }
 
     private void OnDestroy()
     {
         Player.Instance.OnPlayerDeath -= Player_OnPlayerDeath;
+    }
+    private void OnEnable()
+    {
+        // Подписка перемещена в Start() где Player.Instance уже инициализирован
+    }
+
+    private void OnDisable()
+    {
+        if (Player.Instance == null) return;
+        Player.Instance.OnPlayerAttack -= Player_OnPlayerAttack;
+        Player.Instance.OnPlayerDeath -= Player_OnPlayerDeath;
+    }
+
+    public void TriggerEndAttackAnimation()
+    {
+        Debug.Log("PlayerVisual.TriggerEndAttackAnimation() called");
+        animator.SetBool(Attack, false);
+        Player.Instance.AttackColliderTurnOff();
+    }
+
+    public void AttackWindowOpen()
+    {
+        Debug.Log("PlayerVisual.AttackWindowOpen() called");
+        Player.Instance.AttackWindowOpen();
+    }
+
+    public void AttackWindowClose()
+    {
+        Debug.Log("PlayerVisual.AttackWindowClose() called");
+        Player.Instance.AttackWindowClose();
     }
 }

@@ -6,17 +6,22 @@ using UnityEngine;
 [SelectionBase]
 [RequireComponent(typeof(KnockBack))]
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(PolygonCollider2D))]
 public class Player : MonoBehaviour
 {
 
     public static Player Instance { get; private set; }
     public event EventHandler OnPlayerDeath;
     public event EventHandler OnFlashBlink;
+    public event EventHandler OnPlayerAttack;
     private Rigidbody2D rb;
+    private PolygonCollider2D _attackCollider;      
     private KnockBack _knockBack;
     [SerializeField] private float movingSpeed = 5f;
     [SerializeField] private int maxHealth = 10;
-    [SerializeField] private float damageRecoveryTime = 0.5f;      
+    [SerializeField] private float damageRecoveryTime = 0.5f;
+    [SerializeField] private int attackDamage = 2;
+   
     [Header("Dash Settings")]
     [SerializeField] private int dashSpeed = 4;
     [SerializeField] private float dashTime = 0.2f;
@@ -71,8 +76,41 @@ public class Player : MonoBehaviour
         
     }
     private void Player_OnPlayerAttack(object sender, System.EventArgs e)
+    {Attack();
+    }
+
+    public void Attack()
     {
-        ActiveWeapon.Instance.GetActiveWeapon().Attack();
+        AttackColliderTurnOffOn();
+        OnPlayerAttack?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void AttackColliderTurnOff()
+    {
+        _attackCollider.enabled = false;
+    }
+
+    private void AttackColliderTurnOn()
+    {
+        _attackCollider.enabled = true;
+    }
+
+    public void FlipAttackCollider(bool isFacingLeft)
+    {
+        // Отражаем точки PolygonCollider по оси X
+        Vector2[] points = _attackCollider.points;
+        for (int i = 0; i < points.Length; i++)
+        {
+            points[i].x = Mathf.Abs(points[i].x) * (isFacingLeft ? -1f : 1f);
+        }
+        _attackCollider.points = points;
+    }
+
+    private void AttackColliderTurnOffOn()
+    {
+        AttackColliderTurnOff();
+        AttackColliderTurnOn();
+        // ActiveWeapon.Instance.GetActiveWeapon().Attack();
     }
 
     private void Awake()
@@ -81,6 +119,8 @@ public class Player : MonoBehaviour
 
         rb = GetComponent<Rigidbody2D>();
         _knockBack = GetComponent<KnockBack>();
+        _attackCollider = GetComponent<PolygonCollider2D>();
+        _attackCollider.enabled = false;
 
         _mainCamera = Camera.main;
         _initialMovingSpeed = movingSpeed;
@@ -161,6 +201,45 @@ public class Player : MonoBehaviour
     {
         Vector3 playerScreenPosition = _mainCamera.WorldToScreenPoint(transform.position);
         return playerScreenPosition;
+    }
+
+    public void AttackWindowOpen()
+    {
+        Debug.Log("Player.AttackWindowOpen() called");
+        _attackCollider.enabled = true;
+    }
+
+    public void AttackWindowClose()
+    {
+        Debug.Log("Player.AttackWindowClose() called");
+        AttackColliderTurnOff();
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        // Проверяем что это именно атакующий коллайдер и он активен
+        if (!_attackCollider.enabled)
+        {
+            Debug.Log("Attack collider is disabled, ignoring collision");
+            return;
+        }
+        
+        Debug.Log("OnTriggerEnter2D called! Collided with: " + collision.gameObject.name);
+        
+        if (collision.transform.TryGetComponent(out EnemyEntity enemyEntity))
+        {
+            Debug.Log("EnemyEntity found! Dealing " + attackDamage + " damage");
+            enemyEntity.TakeDamage(attackDamage);
+        }
+        else if (collision.transform.TryGetComponent(out DestructiblePlants destructiblePlant))
+        {
+            Debug.Log("DestructiblePlants found! Destroying plant");
+            destructiblePlant.TakeDamage();
+        }
+        else
+        {
+            Debug.LogWarning("No EnemyEntity or DestructiblePlants component on: " + collision.gameObject.name);
+        }
     }
 
     private void OnDestroy()
