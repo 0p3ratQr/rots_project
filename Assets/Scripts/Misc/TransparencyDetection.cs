@@ -17,18 +17,15 @@ public class TransparencyDetection : MonoBehaviour
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
-        Debug.Log($"[TransparencyDetection] Awake: Component initialized. Transparency amount: {transparencyAmount}, Fade time: {fadeTime}");
+       
     }
 
     private void OnTriggerEnter2D(Collider2D collider)
     {
-        Debug.Log($"[TransparencyDetection] OnTriggerEnter2D: Collider detected - {collider.gameObject.name}");
         if (collider.gameObject.GetComponent<Player>())
         {
-            Debug.Log($"[TransparencyDetection] Player detected!");
            if(collider is CapsuleCollider2D)
            {
-               Debug.Log($"[TransparencyDetection] CapsuleCollider2D detected. Starting fade to transparency: {transparencyAmount}");
                StopAllCoroutines();
                StartCoroutine(FadeRoutine(_spriteRenderer, fadeTime, _spriteRenderer.color.a, transparencyAmount));
            }
@@ -37,13 +34,10 @@ public class TransparencyDetection : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collider)
     {
-        Debug.Log($"[TransparencyDetection] OnTriggerExit2D: Collider left - {collider.gameObject.name}");
         if (collider.gameObject.GetComponent<Player>())
         {
-            Debug.Log($"[TransparencyDetection] Player left!");
             if(collider is CapsuleCollider2D)
             {
-                Debug.Log($"[TransparencyDetection] CapsuleCollider2D left. Starting fade to full opacity: {FULL_NON_TRANSPARENT}");
                 StopAllCoroutines();
                 StartCoroutine(FadeRoutine(_spriteRenderer, fadeTime, _spriteRenderer.color.a, FULL_NON_TRANSPARENT));
             }

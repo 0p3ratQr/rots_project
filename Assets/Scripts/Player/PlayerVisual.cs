@@ -25,15 +25,15 @@ public class PlayerVisual : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("PlayerVisual.Start() called");
+   
         Player.Instance.OnPlayerAttack += Player_OnPlayerAttack;
         Player.Instance.OnPlayerDeath += Player_OnPlayerDeath;
-        Debug.Log("PlayerVisual subscribed to attack and death events");
+       
     }
     
     private void Player_OnPlayerAttack(object sender, System.EventArgs e)
     {
-        Debug.Log("PlayerVisual.Player_OnPlayerAttack() called");
+ 
         animator.SetBool(Attack, true);
     }
     private void Player_OnPlayerDeath(object sender, System.EventArgs e)

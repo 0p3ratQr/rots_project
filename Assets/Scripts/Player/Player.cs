@@ -11,14 +11,16 @@ public class Player : MonoBehaviour
 {
 
     public static Player Instance { get; private set; }
+    
     public event EventHandler OnPlayerDeath;
     public event EventHandler OnFlashBlink;
     public event EventHandler OnPlayerAttack;
     private Rigidbody2D rb;
     private PolygonCollider2D _attackCollider;      
     private KnockBack _knockBack;
+    [SerializeField] private HealthBarUI _healthBarUI;
     [SerializeField] private float movingSpeed = 5f;
-    [SerializeField] private int maxHealth = 10;
+    [SerializeField] public int maxHealth = 10;
     [SerializeField] private float damageRecoveryTime = 0.5f;
     [SerializeField] private int attackDamage = 2;
    
@@ -42,9 +44,6 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        _currentHealth = maxHealth;
-        _canTakeDamage = true;
-        _isAlive = true;
         GameInput.Instance.OnPlayerAttack += Player_OnPlayerAttack;
         GameInput.Instance.OnPlayerDash += Player_OnPlayerDash;
         trailRenderer.emitting = false;
@@ -125,6 +124,10 @@ public class Player : MonoBehaviour
         _mainCamera = Camera.main;
         _initialMovingSpeed = movingSpeed;
 
+        // Инициализация здоровья в Awake, чтобы оно было доступно сразу
+        _currentHealth = maxHealth;
+        _canTakeDamage = true;
+        _isAlive = true;
     }
     private void Update()
     {
@@ -142,6 +145,16 @@ public class Player : MonoBehaviour
     public bool IsAlive()
     {
         return _isAlive;
+    }
+
+    public int GetCurrentHealth()
+    {
+        return _currentHealth;
+    }
+
+    public int GetMaxHealth()
+    {
+        return maxHealth;
     }
 
     public void TakeDamage(Transform damageSource, int damage)
@@ -211,7 +224,6 @@ public class Player : MonoBehaviour
 
     public void AttackWindowClose()
     {
-        Debug.Log("Player.AttackWindowClose() called");
         AttackColliderTurnOff();
     }
 
@@ -220,25 +232,20 @@ public class Player : MonoBehaviour
         // Проверяем что это именно атакующий коллайдер и он активен
         if (!_attackCollider.enabled)
         {
-            Debug.Log("Attack collider is disabled, ignoring collision");
             return;
         }
         
-        Debug.Log("OnTriggerEnter2D called! Collided with: " + collision.gameObject.name);
-        
+    
         if (collision.transform.TryGetComponent(out EnemyEntity enemyEntity))
         {
-            Debug.Log("EnemyEntity found! Dealing " + attackDamage + " damage");
             enemyEntity.TakeDamage(attackDamage);
         }
         else if (collision.transform.TryGetComponent(out DestructiblePlants destructiblePlant))
         {
-            Debug.Log("DestructiblePlants found! Destroying plant");
             destructiblePlant.TakeDamage();
         }
         else
         {
-            Debug.LogWarning("No EnemyEntity or DestructiblePlants component on: " + collision.gameObject.name);
         }
     }
 

@@ -37,7 +37,7 @@ public class EnemyEntity : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        Debug.Log("attacked");
+    
     }
 
     private void OnTriggerStay2D(Collider2D collision)
