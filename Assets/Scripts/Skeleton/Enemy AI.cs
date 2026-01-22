@@ -17,6 +17,8 @@ public class EnemyAI : MonoBehaviour
      [SerializeField] private float _chasingSpeedMultiplier = 1.5f;
     [SerializeField] private float _attackingDistance = 2f;
     [SerializeField] private float _attackRate = 2f;
+    [SerializeField] private bool _hasRangedAttack = false;
+    [SerializeField, Range(0f, 1f)] private float _meleeAttackChance = 0.6f;
     [SerializeField] private float _nextAttackTime = 0f;
     private NavMeshAgent _navMeshAgent;
     private State _currentState;
@@ -31,7 +33,9 @@ public class EnemyAI : MonoBehaviour
     private float _nextCheckDirectionTime = 0f;
     private float _checkDirectionDuration = 0.1f;
     private Vector3 _lastPosition;
+    private bool _isPerformingRangeAttack = false;
     public event EventHandler OnEnemyAttack;
+    public event EventHandler OnEnemyRangeAttack;
 
 
     public bool IsRunning => _navMeshAgent.velocity != Vector3.zero;
@@ -43,6 +47,12 @@ public class EnemyAI : MonoBehaviour
         Chasing,
         Attacking,
         Death
+    }
+
+    private enum AttackType
+    {
+        Melee,
+        Range
     }
 
     // private void Start()
@@ -70,9 +80,28 @@ public class EnemyAI : MonoBehaviour
         _navMeshAgent.ResetPath();
         _currentState = State.Death;
     }
+
+    public void SetRangeAttacking(bool isAttacking)
+    {
+        _isPerformingRangeAttack = isAttacking;
+        if (isAttacking)
+        {
+            _navMeshAgent.ResetPath();
+            Debug.Log("[EnemyAI] Дальняя атака: движение заблокировано");
+        }
+        else
+        {
+            Debug.Log("[EnemyAI] Дальняя атака завершена: движение разблокировано");
+        }
+    }
     private void StateHandler()
     {
-          switch (_currentState)
+        if (_isPerformingRangeAttack)
+        {
+            return;
+        }
+
+        switch (_currentState)
         {
             default:
             case State.Roaming:
@@ -146,10 +175,30 @@ public class EnemyAI : MonoBehaviour
     {
         if (Time.time > _nextAttackTime) 
         {
-             OnEnemyAttack?.Invoke(this, EventArgs.Empty);
+            AttackType attackType = GetNextAttackType();
+
+            if (attackType == AttackType.Range)
+            {
+                OnEnemyRangeAttack?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                OnEnemyAttack?.Invoke(this, EventArgs.Empty);
+            }
             _nextAttackTime = Time.time + _attackRate;
         }
  
+    }
+
+    private AttackType GetNextAttackType()
+    {
+        if (!_hasRangedAttack)
+        {
+            return AttackType.Melee;
+        }
+
+        float roll = UnityEngine.Random.value;
+        return roll <= _meleeAttackChance ? AttackType.Melee : AttackType.Range;
     }
    private void ChasingTarget()
     {
