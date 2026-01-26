@@ -16,6 +16,8 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float _chasingDistance = 4f;
      [SerializeField] private float _chasingSpeedMultiplier = 1.5f;
     [SerializeField] private float _attackingDistance = 2f;
+    [SerializeField] private float _rangeAttackingDistance = 5f;
+    [SerializeField] private float _engagementDistance = 10f;
     [SerializeField] private float _attackRate = 2f;
     [SerializeField] private bool _hasRangedAttack = false;
     [SerializeField, Range(0f, 1f)] private float _meleeAttackChance = 0.6f;
@@ -34,6 +36,7 @@ public class EnemyAI : MonoBehaviour
     private float _checkDirectionDuration = 0.1f;
     private Vector3 _lastPosition;
     private bool _isPerformingRangeAttack = false;
+    private AttackType _selectedAttackType = AttackType.Melee;
     public event EventHandler OnEnemyAttack;
     public event EventHandler OnEnemyRangeAttack;
 
@@ -137,7 +140,7 @@ public class EnemyAI : MonoBehaviour
 
         if (_isChasingEnemy)
         {
-            if (distanceToPlayer <= _chasingDistance)
+            if (distanceToPlayer <= _engagementDistance)
             {
                 newState = State.Chasing;
             }
@@ -145,27 +148,40 @@ public class EnemyAI : MonoBehaviour
 
         if (_isAttackingEnemy)
         {
-            if (distanceToPlayer <= _attackingDistance)
+            
+            if (distanceToPlayer <= _engagementDistance)
             {
-                newState = Player.Instance.IsAlive() ? State.Attacking : State.Roaming;
+            
+                float requiredAttackDistance = (_selectedAttackType == AttackType.Range) 
+                    ? _rangeAttackingDistance 
+                    : _attackingDistance;
+                
+                if (distanceToPlayer <= requiredAttackDistance)
+                {
+                    newState = Player.Instance.IsAlive() ? State.Attacking : State.Roaming;
+                }
+                else
+                {
+                    newState = State.Chasing;
+                }
             }
         }
-        if (newState != _currentState) // Если новое состояние отличается от текущего 
+        if (newState != _currentState)
         {
             if(newState == State.Chasing)
             {
-                _navMeshAgent.ResetPath(); // Сброс пути
-                _navMeshAgent.speed = _chasingSpeed; // Увеличение скорости
+                _navMeshAgent.ResetPath();
+                _navMeshAgent.speed = _chasingSpeed;
             } else if (newState == State.Roaming)
             {
-                _roamingTimer = 0f; //рос таймера
-                _navMeshAgent.speed = _roamingSpeed; // Возврат к нормальной скорости
+                _roamingTimer = 0f;
+                _navMeshAgent.speed = _roamingSpeed; 
             } else if (newState == State.Attacking)
             {
                 _navMeshAgent.ResetPath();
             }
 
-            _currentState = newState; // Обновление текущего состояния потому что оно сменилось
+            _currentState = newState;
         }
        
     }
@@ -175,9 +191,9 @@ public class EnemyAI : MonoBehaviour
     {
         if (Time.time > _nextAttackTime) 
         {
-            AttackType attackType = GetNextAttackType();
+            _selectedAttackType = GetNextAttackType();
 
-            if (attackType == AttackType.Range)
+            if (_selectedAttackType == AttackType.Range)
             {
                 OnEnemyRangeAttack?.Invoke(this, EventArgs.Empty);
             }
@@ -202,7 +218,7 @@ public class EnemyAI : MonoBehaviour
     }
    private void ChasingTarget()
     {
-        _navMeshAgent.SetDestination(Player.Instance.transform.position);   // Положение игрока
+        _navMeshAgent.SetDestination(Player.Instance.transform.position);
     }
     private void Roaming()
     {
